@@ -4,7 +4,7 @@ from PIL import Image, ImageGrab
 from io import BytesIO
 import struct
 
-MAX_MB = 8
+MAX_MB = 7.9
 MB = 1024 * 1024
 
 # Set the clipboard to have the data of given type
@@ -64,23 +64,29 @@ def new_clip():
 		size = get_size(img)
 		ratio = 1
 
+		# Stop if under 8MB
+		# >8MB get the ratio of input file size to max size, then half it's distance to 1. 
+		# This is to try and fix bug where image would be shrunk too far. Still edge cases 
+		# exist where image is too big for discord, but registers as less than 8MB in memory 5/14/2020
 		if(size < MAX_MB):
-			out = img
+			print("Under 8MB, {}MB".format(size))
 		else:
 			ratio = size / MAX_MB
+			ratio = ((ratio - 1) / 3) + 1
 
 			# Resize the output
 			out_size = (int(rows / ratio), int(cols / ratio))
 			out = img.resize(out_size, resample=Image.LANCZOS)
 
-		print("In size: {}, Out size: {}".format(size, get_size(out)))
+			# TODO: Remove this after testing
+			print("In size: {}, Out size: {}".format(size, get_size(out)))
 
-		with BytesIO() as output:
-			out.convert("RGB").save(output, "BMP")
-			data = output.getvalue()[14:]
+			with BytesIO() as output:
+				out.convert("RGB").save(output, "BMP")
+				data = output.getvalue()[14:]
 
-		# Set the image to the clipboard
-		set_clipboard(win32.CF_DIB, data)
+			# Set the image to the clipboard
+			set_clipboard(win32.CF_DIB, data)
 
 # -------------------------------------------------
 
