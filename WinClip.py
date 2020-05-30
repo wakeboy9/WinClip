@@ -3,6 +3,8 @@ import win32clipboard as win32
 from PIL import Image, ImageGrab
 from io import BytesIO
 import struct
+import os
+import time
 
 MAX_MB = 7.9
 MB = 1024 * 1024
@@ -17,11 +19,17 @@ def set_clipboard(type, data):
 
 # Get PNG size in MB
 def get_size(img):
-		with BytesIO() as out:
-			img.save(out, 'png')
-			size = out.tell()
+	with BytesIO() as out:
+		img.save(out, 'png')
+		size = out.tell()
 
-		return round(size / MB, 2)
+	return round(size / MB, 2)
+
+def get_size_saved(img):
+	file_name = "temp/out.png"
+	img.save(file_name)
+	if os.path.isfile(file_name):
+		return round(os.stat(file_name).st_size / MB, 2)
 
 def clip():
 	# Grab the clipboard and do stuff if it's an image
@@ -88,6 +96,22 @@ def new_clip():
 			# Set the image to the clipboard
 			set_clipboard(win32.CF_DIB, data)
 
+# Have seen that memory is a touch faster and that they both give the same size
+def save_vs_bytes():
+	img = ImageGrab.grabclipboard()
+	if isinstance(img, Image.Image):
+		t0 = time.time()
+		save_size = get_size_saved(img)
+		t1 = time.time()
+		print("Saved image time: {} \
+			\nSaved image size: {}".format((t1-t0), save_size))
+		
+		t0 = time.time()
+		bytes_size = get_size(img)
+		t1 = time.time()
+		print("In memory: {} \
+			\nSaved image size: {}".format((t1-t0), bytes_size))
+
 # -------------------------------------------------
 
-new_clip()
+save_vs_bytes()
