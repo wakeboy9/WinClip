@@ -2,7 +2,6 @@
 import win32clipboard as win32
 from PIL import Image, ImageGrab
 from io import BytesIO
-import struct
 import os
 import time
 
@@ -30,11 +29,7 @@ def send_image_to_clipboard(img):
 
 # Get PNG size in MB
 def get_rgba_size(img):
-	with BytesIO() as output:
-		rgba = img.convert("RGBA")
-		rgba.save(output, "BMP")
-		data = output.getvalue()[14:]
-
+	rgba = img.convert("RGBA")
 	return get_size_saved(rgba)
 
 def get_size_saved(img):
@@ -58,7 +53,7 @@ def brute_clip():
 		elif large >= 2000:
 			ratio = large / 1500
 		else:
-			print('small')
+			print('Smaller than ')
 			return
 
 		# Resize the output
@@ -73,12 +68,17 @@ def brute_clip():
 		# Set the image to the clipboard
 		set_clipboard(win32.CF_DIB, data)
 
+# Next steps are to find a way to speed up converting to rgba and getting file size, 
+# then implement a for loop to get as close as possible to 8MB
 def save_clip():
 	img = ImageGrab.grabclipboard()
 	if isinstance(img, Image.Image):
 		# Resize the image to convert it into bytes so we can convert it to RGBA
 		rgba = img.resize(img.size, resample=Image.NEAREST)
+		t0 = time.time()
 		size = get_rgba_size(rgba)
+		t1 = time.time()
+		print("Saved image time: {}".format(t1-t0))
 
 		if(size < MAX_MB):
 			print("Under 8MB, {}MB".format(size))
@@ -94,7 +94,7 @@ def save_clip():
 			out = img.resize(out_size, resample=Image.NEAREST)
 
 			save_size = get_rgba_size(out)
-			print("Saved image size: {}MB".format(save_size))
+			print("Output size: {}MB".format(save_size))
 
 			send_image_to_clipboard(out)
 
